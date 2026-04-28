@@ -5,6 +5,7 @@ import os
 from stack_py import TStack, TElement
 from stack_cpp_wrapper import StackCpp
 
+
 class StackApp:
     def __init__(self, root):
         self.root = root
@@ -15,6 +16,7 @@ class StackApp:
         self.bg_color = "#f0f0f0"
         self.root.configure(bg=self.bg_color)
 
+        # По умолчанию используется Python-реализация
         self.stack = TStack()
         self.current_module = "Python"
 
@@ -22,7 +24,7 @@ class StackApp:
         self.update_stack_display()
 
     def create_widgets(self):
-        # Заголовок
+        # Заголовокswitch_module
         title_frame = tk.Frame(self.root, bg="#2c3e50", height=50)
         title_frame.pack(fill=tk.X)
         title_frame.pack_propagate(False)
@@ -123,6 +125,7 @@ class StackApp:
                   relief=tk.RAISED, borderwidth=2).pack(pady=10)
 
     def switch_module(self):
+        """Переключение между реализациями стека (Python / C++ dynamic / C++ STL)."""
         choice = self.module_var.get()
         try:
             if choice == "python":
@@ -133,29 +136,35 @@ class StackApp:
                     messagebox.showerror("Ошибка", "Файл stack_cpp.dll не найден. Скомпилируйте C++ модуль.")
                     self.module_var.set("python")
                     return
-                self.stack = StackCpp("stack_cpp.dll")
+                # Абсолютный путь к папке с gui.py
+                base = os.path.dirname(os.path.abspath(__file__))
+                self.stack = StackCpp(os.path.join(base, "stack_cpp.dll"))
                 self.current_module = "C++ (dynamic)"
             elif choice == "cpp_stl":
                 if not os.path.exists("stack_cpp_stl.dll"):
                     messagebox.showerror("Ошибка", "Файл stack_cpp_stl.dll не найден. Скомпилируйте C++ модуль STL.")
                     self.module_var.set("python")
                     return
-                self.stack = StackCpp("stack_cpp_stl.dll")
+                base = os.path.dirname(os.path.abspath(__file__))
+                self.stack = StackCpp(os.path.join(base, "stack_cpp_stl.dll"))
                 self.current_module = "C++ (STL)"
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось загрузить модуль: {e}")
             self.module_var.set("python")
             self.stack = TStack()
             self.current_module = "Python"
+
         self.clear_entries()
         self.update_stack_display()
         self.show_notification(f"Модуль: {self.current_module}")
 
     def show_notification(self, msg, is_success=True):
+        """Выводит уведомление в верхней панели."""
         self.notif_label.config(text=msg, fg="white" if is_success else "#ff9999")
         self.root.after(3000, lambda: self.notif_label.config(text="Ожидание действий...", fg="white"))
 
     def update_stack_display(self):
+        """Обновляет список элементов стека в области отображения."""
         self.stack_display.delete(1.0, tk.END)
         if self.stack.is_empty():
             self.stack_display.insert(tk.END, "Стек пуст\n")
@@ -174,6 +183,7 @@ class StackApp:
         self.status_label.config(text=status)
 
     def push_stack(self):
+        """Добавляет элемент в стек."""
         a = self.entry_a.get().strip()
         b = self.entry_b.get().strip()
         if not a or not b:
@@ -184,7 +194,8 @@ class StackApp:
                 elem = TElement(a, b)
                 self.stack.push(elem)
             else:
-                self.stack.push(a, b)  # C++ обёртка
+                # C++ обёртка принимает два отдельных значения
+                self.stack.push(a, b)
         except Exception as e:
             self.show_notification(f"Ошибка: {e}", False)
             return
@@ -193,6 +204,7 @@ class StackApp:
         self.show_notification(f"Добавлен: {a} | {b}")
 
     def pop_stack(self):
+        """Удаляет элемент с вершины стека."""
         try:
             elem = self.stack.pop()
         except IndexError as e:
@@ -208,6 +220,7 @@ class StackApp:
             self.show_notification(f"Удалён: {elem}")
 
     def peek_stack(self):
+        """Показывает элемент на вершине стека."""
         try:
             elem = self.stack.peek()
         except IndexError as e:
@@ -222,16 +235,20 @@ class StackApp:
             self.show_notification(f"Вершина: {elem}")
 
     def clear_stack(self):
+        """Полностью очищает стек."""
         self.stack.clear()
         self.update_stack_display()
         self.show_notification("Стек очищен")
 
     def clear_entries(self):
+        """Очищает поля ввода параметров."""
         self.entry_a.delete(0, tk.END)
         self.entry_b.delete(0, tk.END)
 
     def exit_app(self):
+        """Закрывает приложение."""
         self.root.destroy()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
